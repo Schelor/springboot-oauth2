@@ -1,3 +1,17 @@
 spring:
   application:
-    name: springboot-oauth2-client
+    name: springboot-oauth2-server
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # 从 AuthServer 的 JWKS 端点获取公钥来本地验签，无需每次回调 AuthServer
+          jwk-set-uri: http://localhost:8080/auth/oauth2/jwks
+          issuer-uri: http://localhost:8080/auth
+
+server:
+  port: 8081
+
+logging:
+  level:
+    org.springframework.security: DEBUG

@@ -1,0 +1,7 @@
+你是一个资深的Java技术专家，对Spring生态技术非常熟悉，我现在要用
+SpringBoot4+Oauth2.0+SpringSecurity+Gradle+Java25搭建一个基于client_credentials模式的API鉴权体系。
+目前我已经完成了一部分基础工作,springboot-authserver已经搭建好了。你需要帮我完善springboot-oauth2-server和springboot-oauth2-client.
+需求如下
+1.Server端提供一个hello的restfulAPI,然后将接受到的参数以JSON格式返回给Client
+2.Client端需要去调用Server端的hello API接口,需要集成认证流程
+3.详细流程你可以参考一下readme.md

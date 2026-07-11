@@ -1,3 +1,35 @@
 spring:
   application:
     name: springboot-oauth2-client
+  security:
+    oauth2:
+      client:
+        registration:
+          # registration-id，代码中通过此 ID 引用
+          auth-server:
+            client-id: test-client
+            client-secret: test-secret
+            authorization-grant-type: client_credentials
+            # 必须与 AuthServer CustomRegisteredClientRepository 中的 CLIENT_SECRET_POST 保持一致
+            # 默认值是 client_secret_basic（Basic Auth header），Auth Server 不支持，会返回 invalid_client
+            client-authentication-method: client_secret_post
+            scope: read,write
+        provider:
+          auth-server:
+            # AuthServer 的 Token 颁发端点
+            token-uri: http://localhost:8080/auth/oauth2/token
+
+server:
+  port: 8082
+
+# Resource Server 地址（供 ApiCallService 使用）
+resource-server:
+  hello-url: http://localhost:8081/hello
+
+logging:
+  level:
+    # OAuth2 token 请求流程（AbstractRestClientOAuth2AccessTokenResponseClient）
+    org.springframework.security.oauth2.client.endpoint: DEBUG
+    # RestClient HTTP 层：DEBUG 看 URL + 状态码，TRACE 同时打印请求 body 和响应 body
+    org.springframework.web.client: TRACE
+    com.example.springboot.oauth2: DEBUG
