@@ -1,0 +1,74 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version "${springBootVersion}"
+}
+
+group = 'com.example'
+version = '0.0.1-SNAPSHOT'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+}
+
+repositories {
+    maven {
+        url 'https://maven.aliyun.com/repository/public/'
+    }
+    maven {
+        url 'https://maven.aliyun.com/repository/spring/'
+    }
+    mavenCentral()
+}
+
+dependencies {
+
+
+    // 1. 主依赖引入 BOM
+    implementation platform("org.springframework.boot:spring-boot-dependencies:${springBootVersion}")
+
+    // Web 容器：排除 Tomcat，使用 Jetty
+    implementation('org.springframework.boot:spring-boot-starter-web') {
+        exclude group: 'org.springframework.boot', module: 'spring-boot-starter-tomcat'
+    }
+    implementation 'org.springframework.boot:spring-boot-starter-jetty'
+
+    // Security & OAuth2 Authorization Server
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.security:spring-security-oauth2-authorization-server'
+
+    // JPA & SQLServer
+//    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+//    runtimeOnly 'com.microsoft.sqlserver:mssql-jdbc'
+    // JPA & H2 内存数据库 (后续替换为 SQLServer 只需改这里和配置文件)
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'com.h2database:h2'
+
+    // RestClient (保留你的原有配置)
+    implementation 'org.springframework.boot:spring-boot-starter-restclient'
+
+    // 2. 为 annotationProcessor 显式引入 BOM
+    annotationProcessor platform("org.springframework.boot:spring-boot-dependencies:${springBootVersion}")
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+
+    // 3. 为测试相关的配置显式引入 BOM (以防万一)
+    testImplementation platform("org.springframework.boot:spring-boot-dependencies:${springBootVersion}")
+    testCompileOnly platform("org.springframework.boot:spring-boot-dependencies:${springBootVersion}")
+    testAnnotationProcessor platform("org.springframework.boot:spring-boot-dependencies:${springBootVersion}")
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-security-test'
+    testCompileOnly 'org.projectlombok:lombok'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testAnnotationProcessor 'org.projectlombok:lombok'
+
+    // hot deploy
+     developmentOnly 'org.springframework.boot:spring-boot-devtools'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
