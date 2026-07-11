@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ./gradlew test           # Run all tests
 ./gradlew bootRun        # Run the application (starts on http://localhost:8080/auth)
 ./gradlew clean          # Clean build artifacts
-./gradlew test --tests="com.example.demogradle.DemogradleApplicationTests"  # Run a specific test
+./gradlew test --tests="com.example.demogradle.AuthServerApplicationTests"  # Run a specific test
 ```
 
 ## Architecture Overview
