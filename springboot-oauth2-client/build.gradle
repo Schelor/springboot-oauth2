@@ -38,6 +38,14 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
 
+    // OpenFeign：声明式 HTTP 客户端
+    // feign-core: 核心框架（@RequestLine / @QueryMap / RequestInterceptor）
+    // feign-jackson: Jackson encoder/decoder，处理 JSON 序列化
+    // feign-okhttp: 底层使用 OkHttp（连接池复用、精细超时控制，生产推荐）
+    implementation 'io.github.openfeign:feign-core:13.5'
+    implementation 'io.github.openfeign:feign-jackson:13.5'
+    implementation 'io.github.openfeign:feign-okhttp:13.5'
+
     // Lombok
     annotationProcessor platform("org.springframework.boot:spring-boot-dependencies:${springBootVersion}")
     compileOnly 'org.projectlombok:lombok'

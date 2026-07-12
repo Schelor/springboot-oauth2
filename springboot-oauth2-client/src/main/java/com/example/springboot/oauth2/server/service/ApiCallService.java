@@ -47,11 +47,14 @@ public class ApiCallService {
         UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromUriString(helloUrl);
         params.forEach(uriBuilder::queryParam);
 
-        return restClient.get()
+        Map<String, Object> resp = restClient.get()
                 .uri(uriBuilder.build().toUri())
                 .header("Authorization", "Bearer " + accessToken)
                 .retrieve()
                 .body(new ParameterizedTypeReference<>() {});
+        resp.put("accessToken", accessToken);
+        return resp;
+
     }
 
     private String fetchAccessToken() {

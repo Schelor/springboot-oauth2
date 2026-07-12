@@ -2,24 +2,33 @@ spring:
   application:
     name: demogradle
   datasource:
-    url: jdbc:h2:mem:authdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
-    driver-class-name: org.h2.Driver
+    #  数据库 authdb 需要提前在 SQL Server 上创建好，所有表均由 schema.sql 统一管理。
+    url: jdbc:sqlserver://localhost:1433;databaseName=authdb;encrypt=true;trustServerCertificate=true
+    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
     username: sa
-    password:
+    password: YourStrong@Passw0rd   # 替换为实际密码
+    type: com.zaxxer.hikari.HikariDataSource  # 显式声明使用 HikariCP（Spring Boot 默认也是它）
+    hikari:
+      pool-name: AuthServerPool             # 连接池名称，出现在日志和监控中
+      minimum-idle: 5                       # 最少保持的空闲连接数
+      maximum-pool-size: 20                 # 最大连接数（含空闲+活跃）
+      idle-timeout: 600000                  # 空闲连接超过 10 分钟未使用则回收（ms）
+      max-lifetime: 1800000                 # 连接最长存活 30 分钟，防止数据库主动断开（ms）
+      connection-timeout: 30000             # 等待获取连接的超时时间 30s，超时抛异常（ms）
+      keepalive-time: 60000                 # 每 60s 发一次心跳 SQL，保持连接活跃（ms）
+      connection-test-query: SELECT 1       # 心跳/验证 SQL（SQL Server 支持 SELECT 1）
   jpa:
-    database-platform: org.hibernate.dialect.H2Dialect
+    database-platform: org.hibernate.dialect.SQLServerDialect
     hibernate:
-      ddl-auto: update
+      ddl-auto: none        # 表结构由 schema.sql 统一管理，Hibernate 不再自动建表/改表
     show-sql: true
     properties:
       hibernate:
         format_sql: true
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
-      settings:
-        web-allow-others: true
+  sql:
+    init:
+      mode: always          # 每次启动执行 schema.sql（IF OBJECT_ID 幂等保护，不会重复建表）
+      separator: "GO"       # SQL Server 批次分隔符，替代默认的 ;（; 会截断 BEGIN...END 块）
 
 server:
   port: 8080

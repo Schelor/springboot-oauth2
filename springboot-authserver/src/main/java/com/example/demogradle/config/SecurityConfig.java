@@ -5,11 +5,11 @@ import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
-import org.h2.server.web.JakartaWebServlet;
-import org.springframework.boot.web.servlet.ServletRegistrationBean;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -18,6 +18,9 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import org.springframework.security.oauth2.server.authorization.JdbcOAuth2AuthorizationService;
+import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
+import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
@@ -29,6 +32,7 @@ import java.util.UUID;
 
 @Configuration
 @EnableWebSecurity
+@Slf4j
 public class SecurityConfig {
 
     @Bean
@@ -59,26 +63,42 @@ public class SecurityConfig {
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests(authorize -> authorize
-                        // 同时匹配 /h2-console（无斜杠）和 /h2-console/**（子路径），以及错误端点
-                        .requestMatchers("/h2-console", "/h2-console/**", "/error").permitAll()
-                        // 其他请求需要认证
+                        .requestMatchers("/error", "/admin/**").permitAll()
                         .anyRequest().authenticated()
                 )
-                // CSRF 配置：只针对 H2 控制台关闭
-                .csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console", "/h2-console/**", "/error"))
-                // 允许 H2 控制台的 iframe 嵌套：推荐使用 sameOrigin() 更加安全
-                .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.sameOrigin()))
-                // 提供一个默认的登录页面
                 .formLogin(Customizer.withDefaults());
 
         return http.build();
     }
 
+//    @Bean
+//    public JWKSource<SecurityContext> jwkSource() {
+//        KeyPair keyPair = generateRsaKey();
+//        RSAPublicKey publicKey = (RSAPublicKey) keyPair.getPublic();
+//        RSAPrivateKey privateKey = (RSAPrivateKey) keyPair.getPrivate();
+//        RSAKey rsaKey = new RSAKey.Builder(publicKey)
+//                .privateKey(privateKey)
+//                .keyID(UUID.randomUUID().toString())
+//                .build();
+//
+//        JWKSet jwkSet = new JWKSet(rsaKey);
+//        return new ImmutableJWKSet<>(jwkSet);
+//    }
+
+    // 临时加在 SecurityConfig 类里，用完即删
     @Bean
     public JWKSource<SecurityContext> jwkSource() {
         KeyPair keyPair = generateRsaKey();
         RSAPublicKey publicKey = (RSAPublicKey) keyPair.getPublic();
         RSAPrivateKey privateKey = (RSAPrivateKey) keyPair.getPrivate();
+
+        // 【临时加这两行】：以标准的 PEM 格式打印公钥
+        String publicKeyPEM = "-----BEGIN PUBLIC KEY-----\n" +
+                java.util.Base64.getEncoder().encodeToString(publicKey.getEncoded()) +
+                "\n-----END PUBLIC KEY-----";
+        System.out.println("========== 下面是你的 RSA 公钥 (PEM) ==========");
+        System.out.println(publicKeyPEM);
+        System.out.println("===============================================");
 
         RSAKey rsaKey = new RSAKey.Builder(publicKey)
                 .privateKey(privateKey)
@@ -111,11 +131,28 @@ public class SecurityConfig {
                 .build();
     }
 
+    /**
+     * 用 JDBC 持久化每次颁发的 OAuth2Authorization（含 access_token）到 SQL Server。
+     * 替换默认的 InMemoryOAuth2AuthorizationService，重启后 token 记录不丢失。
+     *
+     * 依赖：
+     *  - JdbcTemplate（Spring Boot 从 datasource 自动创建，实现了 JdbcOperations）
+     *  - RegisteredClientRepository（CustomRegisteredClientRepository，用于反序列化时关联 client）
+     */
     @Bean
-    public ServletRegistrationBean<JakartaWebServlet> h2ConsoleServlet() {
-        ServletRegistrationBean<JakartaWebServlet> registration =
-                new ServletRegistrationBean<>(new JakartaWebServlet(), "/h2-console/*");
-        registration.setName("H2Console");
-        return registration;
+    public OAuth2AuthorizationService authorizationService(
+            JdbcOperations jdbcOperations,
+            RegisteredClientRepository registeredClientRepository) {
+        return new JdbcOAuth2AuthorizationService(jdbcOperations, registeredClientRepository);
     }
+
+// h2-console servlet remaining
+//    @Bean
+//    public ServletRegistrationBean<JakartaWebServlet> h2ConsoleServlet() {
+//        ServletRegistrationBean<JakartaWebServlet> registration =
+//                new ServletRegistrationBean<>(new JakartaWebServlet(), "/h2-console/*");
+//        registration.setName("H2Console");
+//        return registration;
+//    }
+
 }
